@@ -70,10 +70,10 @@ type NewsData {
 }
 
 type News {
-  id: Int
-  title: String
-  body: String
-  postImage: String
+  id: Int!
+  title: String!
+  body: String!
+  postImage: String!
 }
 ```
 

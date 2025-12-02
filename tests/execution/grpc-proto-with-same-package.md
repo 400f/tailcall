@@ -54,11 +54,11 @@ type Query {
 }
 
 type Foo {
-  foo: String
+  foo: String!
 }
 
 type Bar {
-  bar: String
+  bar: String!
 }
 ```
 

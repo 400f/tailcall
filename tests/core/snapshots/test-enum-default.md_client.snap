@@ -4,8 +4,8 @@ expression: formatted
 snapshot_kind: text
 ---
 type News {
-  foo: Status
-  id: Int
+  foo: Status!
+  id: Int!
 }
 
 type NewsData {

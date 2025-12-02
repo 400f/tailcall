@@ -10,8 +10,12 @@ type News {
   title: String!
 }
 
+type NewsData {
+  news: [News]
+}
+
 type Query {
-  newsById: News!
+  news: NewsData!
 }
 
 schema {

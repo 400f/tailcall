@@ -58,8 +58,8 @@ enum Status {
 }
 
 type News {
-  id: Int
-  foo: Status
+  id: Int!
+  foo: Status!
 }
 
 input NewsInput {

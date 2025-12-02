@@ -1,7 +1,3 @@
----
-error: true
----
-
 # test-grpc-optional
 
 ```protobuf @file:news.proto

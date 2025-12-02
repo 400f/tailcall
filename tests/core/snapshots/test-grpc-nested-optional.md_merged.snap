@@ -4,9 +4,8 @@ expression: formatter
 snapshot_kind: text
 ---
 schema
-  @server(port: 8000)
+  @server
   @upstream
-  @link(src: "test.js", type: Script)
   @link(id: "news", src: "news.proto", type: Protobuf)
   @link(src: "schema_0.graphql", type: Config) {
   query: Query
@@ -19,12 +18,10 @@ type News {
   title: String!
 }
 
+type NewsData {
+  news: [News]
+}
+
 type Query {
-  newsById: News!
-    @grpc(
-      url: "http://localhost:50051"
-      body: {id: 2}
-      method: "news.NewsService.GetNews"
-      onResponseBody: "onResponse"
-    )
+  news: NewsData! @grpc(url: "http://localhost:4000", method: "news.NewsService.GetAllNews")
 }

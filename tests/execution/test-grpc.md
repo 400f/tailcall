@@ -66,10 +66,10 @@ input NewsInput {
 }
 
 type News {
-  body: String
-  id: Int
-  postImage: String
-  title: String
+  body: String!
+  id: Int!
+  postImage: String!
+  title: String!
 }
 
 type NewsData {
