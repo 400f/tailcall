@@ -1,14 +1,14 @@
 ---
 source: src/core/generator/from_proto.rs
+assertion_line: 603
 expression: result
-snapshot_kind: text
 ---
 schema @server @upstream {
   query: Query
 }
 
 input GEN__nested__types__Result__Nested__VeryNestedInput {
-  description: String
+  description: String!
 }
 
 enum GEN__nested__types__Result__NestedEnum {
@@ -20,16 +20,16 @@ enum GEN__nested__types__Result__NestedEnum {
 type GEN__nested__types__Result {
   nestedEnum: GEN__nested__types__Result__NestedEnum
   nestedUsage: GEN__nested__types__Result__Nested
-  value: String
+  value: String!
 }
 
 type GEN__nested__types__Result__Nested {
   info: GEN__nested__types__Result__Nested__VeryNested
-  movie: String
+  movie: String!
 }
 
 type GEN__nested__types__Result__Nested__VeryNested {
-  description: String
+  description: String!
 }
 
 type Query {

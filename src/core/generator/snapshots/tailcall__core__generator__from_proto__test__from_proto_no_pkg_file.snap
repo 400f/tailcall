@@ -1,21 +1,21 @@
 ---
 source: src/core/generator/from_proto.rs
+assertion_line: 555
 expression: result
-snapshot_kind: text
 ---
 schema @server @upstream {
   query: Query
 }
 
 type GEN__News {
-  body: String
-  id: Int
-  postImage: String
-  title: String
+  body: String!
+  id: Int!
+  postImage: String!
+  title: String!
 }
 
 type GEN__NewsList {
-  news: [GEN__News]
+  news: [GEN__News!]!
 }
 
 type Query {

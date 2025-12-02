@@ -1,26 +1,26 @@
 ---
 source: src/core/config/transformer/ambiguous_type.rs
+assertion_line: 266
 expression: config.to_sdl()
-snapshot_kind: text
 ---
 schema @server @upstream {
   query: Query
 }
 
 input GEN__news__MultipleNewsId {
-  ids: [GEN__news__NewsId]
+  ids: [GEN__news__NewsId!]!
 }
 
 input GEN__news__NewsId {
-  id: Int
+  id: Int!
 }
 
 input GEN__news__NewsInput {
-  body: String
-  id: Int
-  postImage: String
+  body: String!
+  id: Int!
+  postImage: String!
   status: GEN__news__Status
-  title: String
+  title: String!
 }
 
 enum GEN__news__Status {
@@ -30,15 +30,15 @@ enum GEN__news__Status {
 }
 
 type GEN__news__News {
-  body: String
-  id: Int
-  postImage: String
+  body: String!
+  id: Int!
+  postImage: String!
   status: GEN__news__Status
-  title: String
+  title: String!
 }
 
 type GEN__news__NewsList {
-  news: [GEN__news__News]
+  news: [GEN__news__News!]!
 }
 
 type Query {

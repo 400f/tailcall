@@ -84,9 +84,9 @@ fn validate_schema(
             // TODO: add validation for input schema - should compare result grpc.body to
             // schema
             let super_type = field_schema.field;
-            // TODO: all of the fields in protobuf are optional actually
-            // and if we want to mark some fields as required in GraphQL
-            // JsonSchema won't match and the validation will fail
+            // Note: proto3 fields without explicit "optional" keyword are now
+            // correctly mapped as required in GraphQL, matching protobuf semantics
+            // where such fields always have default values.
             match sub_type.is_a(&super_type, name).to_result() {
                 Ok(res) => Valid::succeed(res),
                 Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),

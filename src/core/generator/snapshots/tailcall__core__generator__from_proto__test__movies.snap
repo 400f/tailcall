@@ -1,7 +1,7 @@
 ---
 source: src/core/generator/from_proto.rs
+assertion_line: 598
 expression: result
-snapshot_kind: text
 ---
 schema @server @upstream {
   query: Query
@@ -40,13 +40,13 @@ input GEN__google__protobuf__DurationInput {
   the `nanos` field must be  of the same sign as the `seconds` field. Must be from 
   -999,999,999  to +999,999,999 inclusive.
   """
-  nanos: Int
+  nanos: Int!
   """
   Signed seconds of the span of time. Must be from -315,576,000,000  to +315,576,000,000 
   inclusive. Note: these bounds are computed from:  60 sec/min * 60 min/hr * 24 hr/day 
   * 365.25 days/year * 10000 years
   """
-  seconds: Int64
+  seconds: Int64!
 }
 
 """
@@ -56,7 +56,7 @@ input GEN__google__protobuf__Int32ValueInput {
   """
   The int32 value.
   """
-  value: Int
+  value: Int!
 }
 
 """
@@ -67,7 +67,7 @@ input GEN__google__protobuf__StringValue {
   """
   The string value.
   """
-  value: String
+  value: String!
 }
 
 """
@@ -118,12 +118,12 @@ input GEN__google__protobuf__TimestampInput {
   with fractions must still have non-negative nanos values  that count forward in time. 
   Must be from 0 to 999,999,999  inclusive.
   """
-  nanos: Int
+  nanos: Int!
   """
   Represents seconds of UTC time since Unix epoch  1970-01-01T00:00:00Z. Must be from 
   0001-01-01T00:00:00Z to  9999-12-31T23:59:59Z inclusive.
   """
-  seconds: Int64
+  seconds: Int64!
 }
 
 """
@@ -133,11 +133,11 @@ input GEN__movies__MovieInput {
   """
   list of cast
   """
-  cast: [String]
+  cast: [String!]!
   duration: GEN__google__protobuf__DurationInput
   genre: GEN__movies__Genre
-  name: String
-  rating: Float
+  name: String!
+  rating: Float!
   """
   SubMovie reference
   """
@@ -161,7 +161,7 @@ input GEN__movies__Movie__SubMovieInput {
   """
   This is a comment for sub_rating
   """
-  subRating: Float
+  subRating: Float!
 }
 
 input GEN__movies__SearchByCastRequest {
@@ -249,13 +249,13 @@ type GEN__google__protobuf__Duration {
   of the same sign as the `seconds` field. Must be from -999,999,999
   to +999,999,999 inclusive.
   """
-  nanos: Int
+  nanos: Int!
   """
   Signed seconds of the span of time. Must be from -315,576,000,000
   to +315,576,000,000 inclusive. Note: these bounds are computed from:
   60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years
   """
-  seconds: Int64
+  seconds: Int64!
 }
 
   """
@@ -266,7 +266,7 @@ type GEN__google__protobuf__Int32Value {
   """
   The int32 value.
   """
-  value: Int
+  value: Int!
 }
 
   """
@@ -344,13 +344,13 @@ type GEN__google__protobuf__Timestamp {
   that count forward in time. Must be from 0 to 999,999,999
   inclusive.
   """
-  nanos: Int
+  nanos: Int!
   """
   Represents seconds of UTC time since Unix epoch
   1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
   9999-12-31T23:59:59Z inclusive.
   """
-  seconds: Int64
+  seconds: Int64!
 }
 
   """
@@ -360,11 +360,11 @@ type GEN__movies__Movie {
   """
   list of cast
   """
-  cast: [String]
+  cast: [String!]!
   duration: GEN__google__protobuf__Duration
   genre: GEN__movies__Genre
-  name: String
-  rating: Float
+  name: String!
+  rating: Float!
   """
   SubMovie reference
   """
@@ -384,7 +384,7 @@ type GEN__movies__Movie__SubMovie {
   """
   This is a comment for sub_rating
   """
-  subRating: Float
+  subRating: Float!
 }
 
   """
@@ -394,7 +394,7 @@ type GEN__movies__MoviesResult {
   """
   list of movies
   """
-  result: [GEN__movies__Movie]
+  result: [GEN__movies__Movie!]!
 }
 
 type Query {

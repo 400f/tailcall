@@ -1,14 +1,15 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
-use async_graphql_extension_apollo_tracing::ApolloTracing;
+// Temporarily disabled due to build issues with protobuf generation
+// use async_graphql_extension_apollo_tracing::ApolloTracing;
 
 use crate::cli::runtime::init;
 use crate::core::app_context::AppContext;
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::blueprint::{Blueprint, Http};
 use crate::core::rest::{EndpointSet, Unchecked};
-use crate::core::schema_extension::SchemaExtension;
+// use crate::core::schema_extension::SchemaExtension;
 
 pub struct ServerConfig {
     pub blueprint: Blueprint,
@@ -22,17 +23,21 @@ impl ServerConfig {
     ) -> anyhow::Result<Self> {
         let mut rt = init(&blueprint);
 
-        let mut extensions = vec![];
+        let extensions = vec![];
 
-        if let Some(TelemetryExporter::Apollo(apollo)) = blueprint.telemetry.export.as_ref() {
-            let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
-            extensions.push(SchemaExtension::new(ApolloTracing::new(
-                apollo.api_key.clone(),
-                apollo.platform.clone().unwrap_or_default(),
-                graph_id.to_string(),
-                variant.to_string(),
-                apollo.version.clone().unwrap_or_default(),
-            )));
+        // Temporarily disabled due to build issues with protobuf generation
+        // if let Some(TelemetryExporter::Apollo(apollo)) = blueprint.telemetry.export.as_ref() {
+        //     let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
+        //     extensions.push(SchemaExtension::new(ApolloTracing::new(
+        //         apollo.api_key.clone(),
+        //         apollo.platform.clone().unwrap_or_default(),
+        //         graph_id.to_string(),
+        //         variant.to_string(),
+        //         apollo.version.clone().unwrap_or_default(),
+        //     )));
+        // }
+        if let Some(TelemetryExporter::Apollo(_apollo)) = blueprint.telemetry.export.as_ref() {
+            tracing::warn!("Apollo tracing is temporarily disabled due to build issues");
         }
         rt.add_extensions(extensions);
 
