@@ -1,26 +1,26 @@
 ---
 source: src/core/generator/generator.rs
+assertion_line: 360
 expression: cfg_module.config().to_sdl()
-snapshot_kind: text
 ---
 schema @server(hostname: "0.0.0.0", port: 8000) @upstream(allowedHeaders: ["authorization"], httpCache: 42) @link(src: "../../../tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf) {
   query: Query
 }
 
 input GEN__news__MultipleNewsId {
-  ids: [Id]
+  ids: [Id!]!
 }
 
 input GEN__news__NewsInput {
-  body: String
-  id: Int
-  postImage: String
+  body: String!
+  id: Int!
+  postImage: String!
   status: Status
-  title: String
+  title: String!
 }
 
 input Id {
-  id: Int
+  id: Int!
 }
 
 enum Status {
@@ -45,7 +45,7 @@ type Comment {
 }
 
 type GEN__news__NewsList {
-  news: [News]
+  news: [News!]!
 }
 
 type InCompatibleProperty {
@@ -54,11 +54,11 @@ type InCompatibleProperty {
 }
 
 type News {
-  body: String
-  id: Int
-  postImage: String
+  body: String!
+  id: Int!
+  postImage: String!
   status: Status
-  title: String
+  title: String!
 }
 
 type Photo {

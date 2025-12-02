@@ -1,18 +1,18 @@
 ---
 source: src/core/generator/from_proto.rs
+assertion_line: 565
 expression: result
-snapshot_kind: text
 ---
 schema @server @upstream {
   query: Query
 }
 
 input GEN__greetings__HelloRequest {
-  name: String
+  name: String!
 }
 
 type GEN__greetings__HelloReply {
-  message: String
+  message: String!
 }
 
 type Query {

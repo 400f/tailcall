@@ -1,74 +1,74 @@
 ---
 source: src/core/generator/from_proto.rs
+assertion_line: 623
 expression: result
-snapshot_kind: text
 ---
 schema @server @upstream {
   query: Query
 }
 
 input GEN__oneof__CommandInput {
-  command: String
+  command: String!
 }
 
 input GEN__oneof__PayloadInput {
-  payload: String
+  payload: String!
 }
 
 input GEN__oneof__Request__Var0__Var {
   payload: GEN__oneof__PayloadInput!
-  usual: String
+  usual: String!
 }
 
 input GEN__oneof__Request__Var0__Var0 {
   flag: Boolean!
   payload: GEN__oneof__PayloadInput!
-  usual: String
+  usual: String!
 }
 
 input GEN__oneof__Request__Var0__Var1 {
   optPayload: GEN__oneof__PayloadInput!
   payload: GEN__oneof__PayloadInput!
-  usual: String
+  usual: String!
 }
 
 input GEN__oneof__Request__Var1__Var {
   command: GEN__oneof__CommandInput!
-  usual: String
+  usual: String!
 }
 
 input GEN__oneof__Request__Var1__Var0 {
   command: GEN__oneof__CommandInput!
   flag: Boolean!
-  usual: String
+  usual: String!
 }
 
 input GEN__oneof__Request__Var1__Var1 {
   command: GEN__oneof__CommandInput!
   optPayload: GEN__oneof__PayloadInput!
-  usual: String
+  usual: String!
 }
 
 input GEN__oneof__Request__Var__Var {
-  usual: String
+  usual: String!
 }
 
 input GEN__oneof__Request__Var__Var0 {
   flag: Boolean!
-  usual: String
+  usual: String!
 }
 
 input GEN__oneof__Request__Var__Var1 {
   optPayload: GEN__oneof__PayloadInput!
-  usual: String
+  usual: String!
 }
 
 interface GEN__oneof__Request__Interface {
-  usual: String
+  usual: String!
 }
 
 interface GEN__oneof__Response__Interface {
-  usual: Int
+  usual: Int!
 }
 
 union GEN__oneof__Request = GEN__oneof__Request__Var0__Var | GEN__oneof__Request__Var0__Var0 | GEN__oneof__Request__Var0__Var1 | GEN__oneof__Request__Var1__Var | GEN__oneof__Request__Var1__Var0 | GEN__oneof__Request__Var1__Var1 | GEN__oneof__Request__Var__Var | GEN__oneof__Request__Var__Var0 | GEN__oneof__Request__Var__Var1
@@ -76,30 +76,30 @@ union GEN__oneof__Request = GEN__oneof__Request__Var0__Var | GEN__oneof__Request
 union GEN__oneof__Response = GEN__oneof__Response__Var | GEN__oneof__Response__Var0 | GEN__oneof__Response__Var1 | GEN__oneof__Response__Var2
 
 type GEN__oneof__Command {
-  command: String
+  command: String!
 }
 
 type GEN__oneof__Payload {
-  payload: String
+  payload: String!
 }
 
 type GEN__oneof__Response__Var implements GEN__oneof__Response__Interface {
-  usual: Int
+  usual: Int!
 }
 
 type GEN__oneof__Response__Var0 implements GEN__oneof__Response__Interface {
   payload: GEN__oneof__Payload!
-  usual: Int
+  usual: Int!
 }
 
 type GEN__oneof__Response__Var1 implements GEN__oneof__Response__Interface {
   command: GEN__oneof__Command!
-  usual: Int
+  usual: Int!
 }
 
 type GEN__oneof__Response__Var2 implements GEN__oneof__Response__Interface {
   response: String!
-  usual: Int
+  usual: Int!
 }
 
 type Query {

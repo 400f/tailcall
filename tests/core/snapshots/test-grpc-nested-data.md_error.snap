@@ -1,11 +1,11 @@
 ---
 source: tests/core/spec.rs
+assertion_line: 82
 expression: errors
-snapshot_kind: text
 ---
 [
   {
-    "message": "Type '{body: Option<String>, id: Option<Number>, postImage: Option<String>, title: Option<String>}' is not assignable to type '[Option<{body: Option<String>, id: Option<Number>, postImage: Option<String>, title: Option<String>}>]'",
+    "message": "Type '{body: String, id: Number, postImage: String, title: String}' is not assignable to type '[Option<{body: Option<String>, id: Option<Number>, postImage: Option<String>, title: Option<String>}>]'",
     "trace": [
       "Query",
       "newsById",

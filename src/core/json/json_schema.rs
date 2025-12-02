@@ -202,6 +202,11 @@ impl JsonSchema {
             JsonSchema::Arr(expected) => {
                 if let JsonSchema::Arr(actual) = sub_type {
                     return actual.is_a(expected, name);
+                } else if let JsonSchema::Opt(inner) = sub_type {
+                    if let JsonSchema::Arr(actual) = inner.as_ref() {
+                        return actual.is_a(expected, name);
+                    }
+                    return fail;
                 } else {
                     return fail;
                 }
@@ -303,10 +308,10 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
             Kind::Message(msg) => JsonSchema::try_from(&msg)?,
             Kind::Enum(enm) => JsonSchema::try_from(&enm)?,
         };
-        let field_schema = if value
-            .cardinality()
-            .eq(&prost_reflect::Cardinality::Optional)
-        {
+        // In proto3, fields that support presence (explicit optional or message fields)
+        // should be wrapped with Opt. Fields without presence tracking (non-optional fields)
+        // should not be wrapped, as they always have default values.
+        let field_schema = if value.supports_presence() {
             JsonSchema::Opt(Box::new(field_schema))
         } else {
             field_schema
@@ -458,26 +463,22 @@ mod tests {
 
         let schema = JsonSchema::try_from(&operation.output_type)?;
 
+        // In proto3, fields without explicit "optional" keyword are non-nullable
+        // and should not be wrapped with Opt since they always have default values
         assert_eq!(
             schema,
             JsonSchema::Obj(BTreeMap::from_iter([
-                (
-                    "postImage".to_owned(),
-                    JsonSchema::Opt(JsonSchema::Str.into())
-                ),
-                ("title".to_owned(), JsonSchema::Opt(JsonSchema::Str.into())),
-                ("id".to_owned(), JsonSchema::Opt(JsonSchema::Num.into())),
-                ("body".to_owned(), JsonSchema::Opt(JsonSchema::Str.into())),
+                ("postImage".to_owned(), JsonSchema::Str),
+                ("title".to_owned(), JsonSchema::Str),
+                ("id".to_owned(), JsonSchema::Num),
+                ("body".to_owned(), JsonSchema::Str),
                 (
                     "status".to_owned(),
-                    JsonSchema::Opt(
-                        JsonSchema::Enum(BTreeSet::from_iter([
-                            "DELETED".to_owned(),
-                            "DRAFT".to_owned(),
-                            "PUBLISHED".to_owned()
-                        ]))
-                        .into()
-                    )
+                    JsonSchema::Enum(BTreeSet::from_iter([
+                        "DELETED".to_owned(),
+                        "DRAFT".to_owned(),
+                        "PUBLISHED".to_owned()
+                    ]))
                 )
             ]))
         );
@@ -522,6 +523,17 @@ mod tests {
             )
             .trace(name)
         );
+    }
+
+    #[test]
+    fn test_optional_array_to_array() {
+        // Test that Option<Array> can be assigned to Array
+        // This is needed for proto3 repeated fields which are represented as Option<Vec<T>>
+        let proto_type = JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(JsonSchema::Any))));
+        let graphql_type = JsonSchema::Arr(Box::new(JsonSchema::Any));
+
+        let result = proto_type.is_a(&graphql_type, "repeatedField");
+        assert!(result.is_succeed(), "Option<[Any]> should be assignable to [Any]");
     }
 
     #[test]

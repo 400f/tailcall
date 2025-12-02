@@ -37,6 +37,9 @@ struct Context {
     /// Optional field to store source code information, including comments, for
     /// each entity.
     comments_builder: CommentsBuilder,
+
+    /// Whether the current file is proto3 (true) or proto2 (false)
+    is_proto3: bool,
 }
 
 impl Context {
@@ -47,6 +50,7 @@ impl Context {
             config: Default::default(),
             map_types: Default::default(),
             comments_builder: CommentsBuilder::new(None),
+            is_proto3: false,
         }
     }
 
@@ -96,8 +100,8 @@ impl Context {
                 return;
             }
 
-            // since all of the fields are actually optional in protobuf generate also a
-            // type without this oneof completely
+            // Generate a type without this oneof to handle the case where none of the
+            // oneof fields are set
             collect_types(
                 format!("{type_name}__Var"),
                 base_type.clone(),
@@ -274,10 +278,28 @@ impl Context {
                 let mut cfg_field = Field::default();
 
                 cfg_field.type_of = match field.label() {
-                    Label::Optional => cfg_field.type_of,
+                    Label::Optional => {
+                        // In proto3, primitive fields without explicit "optional" keyword have default values
+                        // and should be non-nullable. Message fields always have presence tracking, even
+                        // without "optional", so they remain nullable.
+                        // In proto2, all optional fields should remain nullable.
+                        let is_message_field = field.type_name.is_some();
+                        match (self.is_proto3, field.proto3_optional, is_message_field) {
+                            // Proto3 with explicit optional keyword - nullable
+                            (true, Some(true), _) => cfg_field.type_of,
+                            // Proto3 message field without optional - nullable (messages always have presence)
+                            (true, None, true) => cfg_field.type_of,
+                            // Proto3 primitive field without optional - non-nullable (has default value)
+                            (true, None, false) => cfg_field.type_of.into_required(),
+                            // Proto2 optional field - nullable
+                            (false, _, _) => cfg_field.type_of,
+                            // This case shouldn't happen, but treat as nullable for safety
+                            _ => cfg_field.type_of,
+                        }
+                    }
                     // required only applicable for proto2
                     Label::Required => cfg_field.type_of.into_required(),
-                    Label::Repeated => cfg_field.type_of.into_list(),
+                    Label::Repeated => cfg_field.type_of.into_required().into_list().into_required(),
                 };
 
                 if let Some(type_name) = &field.type_name {
@@ -462,6 +484,13 @@ pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str, url: &str)
     for descriptor_set in descriptor_sets.iter() {
         for file_descriptor in descriptor_set.file.iter() {
             ctx.namespace = vec![file_descriptor.package().to_string()];
+
+            // Determine if this is a proto3 file
+            ctx.is_proto3 = file_descriptor
+                .syntax
+                .as_ref()
+                .map(|s| s.as_str() == "proto3")
+                .unwrap_or(false);
 
             if let Some(source_code_info) = &file_descriptor.source_code_info {
                 ctx = ctx.with_source_code_info(source_code_info.clone());
