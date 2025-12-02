@@ -279,17 +279,20 @@ impl Context {
 
                 cfg_field.type_of = match field.label() {
                     Label::Optional => {
-                        // In proto3, primitive fields without explicit "optional" keyword have default values
-                        // and should be non-nullable. Message fields always have presence tracking, even
+                        // In proto3, primitive fields without explicit "optional" keyword have
+                        // default values and should be non-nullable.
+                        // Message fields always have presence tracking, even
                         // without "optional", so they remain nullable.
                         // In proto2, all optional fields should remain nullable.
                         let is_message_field = field.type_name.is_some();
                         match (self.is_proto3, field.proto3_optional, is_message_field) {
                             // Proto3 with explicit optional keyword - nullable
                             (true, Some(true), _) => cfg_field.type_of,
-                            // Proto3 message field without optional - nullable (messages always have presence)
+                            // Proto3 message field without optional - nullable (messages always
+                            // have presence)
                             (true, None, true) => cfg_field.type_of,
-                            // Proto3 primitive field without optional - non-nullable (has default value)
+                            // Proto3 primitive field without optional - non-nullable (has default
+                            // value)
                             (true, None, false) => cfg_field.type_of.into_required(),
                             // Proto2 optional field - nullable
                             (false, _, _) => cfg_field.type_of,
@@ -299,7 +302,11 @@ impl Context {
                     }
                     // required only applicable for proto2
                     Label::Required => cfg_field.type_of.into_required(),
-                    Label::Repeated => cfg_field.type_of.into_required().into_list().into_required(),
+                    Label::Repeated => cfg_field
+                        .type_of
+                        .into_required()
+                        .into_list()
+                        .into_required(),
                 };
 
                 if let Some(type_name) = &field.type_name {

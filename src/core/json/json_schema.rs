@@ -309,8 +309,8 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
             Kind::Enum(enm) => JsonSchema::try_from(&enm)?,
         };
         // In proto3, fields that support presence (explicit optional or message fields)
-        // should be wrapped with Opt. Fields without presence tracking (non-optional fields)
-        // should not be wrapped, as they always have default values.
+        // should be wrapped with Opt. Fields without presence tracking (non-optional
+        // fields) should not be wrapped, as they always have default values.
         let field_schema = if value.supports_presence() {
             JsonSchema::Opt(Box::new(field_schema))
         } else {
@@ -528,12 +528,16 @@ mod tests {
     #[test]
     fn test_optional_array_to_array() {
         // Test that Option<Array> can be assigned to Array
-        // This is needed for proto3 repeated fields which are represented as Option<Vec<T>>
+        // This is needed for proto3 repeated fields which are represented as
+        // Option<Vec<T>>
         let proto_type = JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(JsonSchema::Any))));
         let graphql_type = JsonSchema::Arr(Box::new(JsonSchema::Any));
 
         let result = proto_type.is_a(&graphql_type, "repeatedField");
-        assert!(result.is_succeed(), "Option<[Any]> should be assignable to [Any]");
+        assert!(
+            result.is_succeed(),
+            "Option<[Any]> should be assignable to [Any]"
+        );
     }
 
     #[test]
