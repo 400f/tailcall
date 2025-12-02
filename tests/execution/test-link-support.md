@@ -50,7 +50,7 @@ input NewsInput {
 }
 
 type News {
-  id: Int
+  id: Int!
 }
 
 type NewsData {

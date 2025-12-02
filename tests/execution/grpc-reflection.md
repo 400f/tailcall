@@ -24,11 +24,11 @@ type NewsData {
 }
 
 type News {
-  id: Int
-  title: String
-  body: String
-  postImage: String
-  status: Status
+  id: Int!
+  title: String!
+  body: String!
+  postImage: String!
+  status: Status!
 }
 
 enum Status {

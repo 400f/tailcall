@@ -4,7 +4,7 @@ expression: formatted
 snapshot_kind: text
 ---
 type News {
-  id: Int
+  id: Int!
 }
 
 input NewsInput {

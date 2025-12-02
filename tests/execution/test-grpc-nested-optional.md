@@ -1,7 +1,3 @@
----
-error: true
----
-
 # test-grpc-nested-optional
 
 ```protobuf @file:news.proto

@@ -13,11 +13,11 @@ schema
 }
 
 type Bar {
-  bar: String
+  bar: String!
 }
 
 type Foo {
-  foo: String
+  foo: String!
 }
 
 type Query {

@@ -4,11 +4,11 @@ expression: formatted
 snapshot_kind: text
 ---
 type News {
-  body: String
-  id: Int
-  postImage: String
-  status: Status
-  title: String
+  body: String!
+  id: Int!
+  postImage: String!
+  status: Status!
+  title: String!
 }
 
 type NewsData {
