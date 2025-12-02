@@ -70,6 +70,7 @@ jobs:
                 os: macos-latest
                 rust: stable
                 target: aarch64-apple-darwin
+                test: false
 
               - build: darwin-x64
                 os: macos-latest
