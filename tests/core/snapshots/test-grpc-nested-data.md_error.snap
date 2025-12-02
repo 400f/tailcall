@@ -6,7 +6,7 @@ snapshot_kind: text
 ---
 [
   {
-    "message": "Type '{body: String, id: Number, postImage: String, title: String}' is not assignable to type '[{body: String, id: Number, postImage: String, title: String}]'",
+    "message": "Type '{body: String, id: Number, postImage: String, title: String}' is not assignable to type '[Option<{body: String, id: Number, postImage: String, title: String}>]'",
     "trace": [
       "Query",
       "newsById",

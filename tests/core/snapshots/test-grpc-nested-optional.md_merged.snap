@@ -1,0 +1,27 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+snapshot_kind: text
+---
+schema
+  @server
+  @upstream
+  @link(id: "news", src: "news.proto", type: Protobuf)
+  @link(src: "schema_0.graphql", type: Config) {
+  query: Query
+}
+
+type News {
+  body: String!
+  id: Int!
+  postImage: String!
+  title: String!
+}
+
+type NewsData {
+  news: [News]
+}
+
+type Query {
+  news: NewsData! @grpc(url: "http://localhost:4000", method: "news.NewsService.GetAllNews")
+}
