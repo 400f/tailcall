@@ -7,10 +7,11 @@ use http::header::{HeaderMap, HeaderName, HeaderValue};
 use news::news_service_server::{NewsService, NewsServiceServer};
 use news::{MultipleNewsId, News, NewsId, NewsList};
 use once_cell::sync::Lazy;
+use opentelemetry::propagation::TextMapCompositePropagator;
 use opentelemetry::trace::{TraceError, TracerProvider};
 use opentelemetry::{global, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::propagation::TraceContextPropagator;
+use opentelemetry_sdk::propagation::{BaggagePropagator, TraceContextPropagator};
 use opentelemetry_sdk::{runtime, Resource};
 use tonic::metadata::MetadataMap;
 use tonic::service::interceptor::InterceptedService;
@@ -177,7 +178,10 @@ static RESOURCE: Lazy<Resource> = Lazy::new(|| {
 });
 
 fn init_tracer() -> Result<(), Error> {
-    global::set_text_map_propagator(TraceContextPropagator::new());
+    global::set_text_map_propagator(TextMapCompositePropagator::new(vec![
+        Box::new(TraceContextPropagator::new()),
+        Box::new(BaggagePropagator::new()),
+    ]));
 
     static TELEMETRY_URL: &str = "https://api.honeycomb.io:443";
     let headers = HeaderMap::from_iter([(
