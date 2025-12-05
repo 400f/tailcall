@@ -10,7 +10,8 @@ use opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge;
 use opentelemetry_otlp::{TonicExporterBuilder, WithExportConfig};
 use opentelemetry_sdk::logs::{Logger, LoggerProvider};
 use opentelemetry_sdk::metrics::{MeterProviderBuilder, PeriodicReader};
-use opentelemetry_sdk::propagation::TraceContextPropagator;
+use opentelemetry::propagation::TextMapCompositePropagator;
+use opentelemetry_sdk::propagation::{BaggagePropagator, TraceContextPropagator};
 use opentelemetry_sdk::runtime::Tokio;
 use opentelemetry_sdk::trace::{Tracer, TracerProvider};
 use opentelemetry_sdk::{runtime, Resource};
@@ -218,7 +219,10 @@ pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow:
         let log_layer = set_logger_provider(export)?;
         set_meter_provider(export)?;
 
-        global::set_text_map_propagator(TraceContextPropagator::new());
+        global::set_text_map_propagator(TextMapCompositePropagator::new(vec![
+            Box::new(TraceContextPropagator::new()),
+            Box::new(BaggagePropagator::new()),
+        ]));
 
         let subscriber = tracing_subscriber::registry()
             .with(trace_layer)
