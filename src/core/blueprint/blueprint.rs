@@ -229,6 +229,10 @@ impl Blueprint {
             schema = schema.validation_mode(ValidationMode::Fast);
         }
 
+        if server.query_depth > 0 {
+            schema = schema.limit_depth(server.query_depth);
+        }
+
         if !server.get_enable_introspection() || schema_modifiers.no_resolver {
             schema = schema.disable_introspection();
         }

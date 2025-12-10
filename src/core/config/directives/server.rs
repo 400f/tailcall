@@ -87,6 +87,12 @@ pub struct Server {
     pub query_validation: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    /// `queryDepth` limits the maximum depth of GraphQL queries to prevent
+    /// deeply nested queries that could impact performance.
+    /// Set to 0 to disable the limit. @default `5`.
+    pub query_depth: Option<usize>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
     /// `responseValidation` Tailcall automatically validates responses from
     /// upstream services using inferred schema. @default `false`.
     pub response_validation: Option<bool>,
@@ -214,6 +220,9 @@ impl Server {
     }
     pub fn enable_query_validation(&self) -> bool {
         self.query_validation.unwrap_or(false)
+    }
+    pub fn get_query_depth(&self) -> usize {
+        self.query_depth.unwrap_or(5)
     }
     pub fn enable_batch_requests(&self) -> bool {
         self.batch_requests.unwrap_or(false)
@@ -378,5 +387,61 @@ mod tests {
         merge_vec.sort_by(|a, b| a.key.cmp(&b.key));
 
         assert_eq!(merge_vec, expected_vec)
+    }
+
+    #[test]
+    fn test_query_depth_default() {
+        let server = Server::default();
+        assert_eq!(server.get_query_depth(), 5);
+    }
+
+    #[test]
+    fn test_query_depth_custom() {
+        let server = Server { query_depth: Some(10), ..Default::default() };
+        assert_eq!(server.get_query_depth(), 10);
+    }
+
+    #[test]
+    fn test_query_depth_zero() {
+        let server = Server { query_depth: Some(0), ..Default::default() };
+        assert_eq!(server.get_query_depth(), 0);
+    }
+
+    #[test]
+    fn test_query_depth_from_sdl() {
+        use crate::core::config::Config;
+        use tailcall_valid::Validator;
+
+        let config_str = r#"
+schema @server(queryDepth: 0) {
+  query: Query
+}
+
+type Query {
+  hello: String
+}
+"#;
+        let config = Config::from_sdl(config_str).to_result().unwrap();
+        assert_eq!(config.server.query_depth, Some(0));
+        assert_eq!(config.server.get_query_depth(), 0);
+    }
+
+    #[test]
+    fn test_query_depth_from_sdl_custom() {
+        use crate::core::config::Config;
+        use tailcall_valid::Validator;
+
+        let config_str = r#"
+schema @server(queryDepth: 10) {
+  query: Query
+}
+
+type Query {
+  hello: String
+}
+"#;
+        let config = Config::from_sdl(config_str).to_result().unwrap();
+        assert_eq!(config.server.query_depth, Some(10));
+        assert_eq!(config.server.get_query_depth(), 10);
     }
 }

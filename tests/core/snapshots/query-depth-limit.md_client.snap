@@ -1,0 +1,30 @@
+---
+source: tests/core/spec.rs
+assertion_line: 246
+expression: formatted
+---
+type Comment {
+  author: User
+  id: Int
+  text: String
+}
+
+type Post {
+  comments: [Comment]
+  id: Int
+  title: String
+}
+
+type Query {
+  user: User
+}
+
+type User {
+  id: Int
+  name: String
+  posts: [Post]
+}
+
+schema {
+  query: Query
+}

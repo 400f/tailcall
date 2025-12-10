@@ -1,0 +1,29 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server(port: 8001, queryDepth: 3) @upstream(httpCache: 42) @link(src: "schema_0.graphql", type: Config) {
+  query: Query
+}
+
+type Comment {
+  author: User
+  id: Int
+  text: String
+}
+
+type Post {
+  comments: [Comment]
+  id: Int
+  title: String
+}
+
+type Query {
+  user: User @http(url: "http://upstream/user")
+}
+
+type User {
+  id: Int
+  name: String
+  posts: [Post]
+}

@@ -1,7 +1,7 @@
 # Recursive Type
 
 ```graphql @schema
-schema @server {
+schema @server(queryDepth: 0) {
   query: Query
   mutation: Mutation
 }
