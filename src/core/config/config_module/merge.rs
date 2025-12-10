@@ -299,6 +299,8 @@ impl Invariant for Cache {
                 unions: self.config.unions.merge_right(other.config.unions),
                 schema,
                 upstream: self.config.upstream.merge_right(other.config.upstream),
+                server: self.config.server.merge_right(other.config.server),
+                telemetry: self.config.telemetry.merge_right(other.config.telemetry),
                 ..self.config
             };
 

@@ -1,0 +1,28 @@
+---
+source: tests/core/spec.rs
+assertion_line: 178
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "user": {
+        "posts": [
+          {
+            "comments": [
+              {
+                "author": {
+                  "name": "Jane"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

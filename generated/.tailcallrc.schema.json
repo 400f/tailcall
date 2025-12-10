@@ -520,6 +520,15 @@
           "format": "uint16",
           "minimum": 0.0
         },
+        "queryDepth": {
+          "description": "`queryDepth` limits the maximum depth of GraphQL queries to prevent deeply nested queries that could impact performance. Set to 0 to disable the limit. @default `5`.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
         "queryValidation": {
           "description": "`queryValidation` checks incoming GraphQL queries against the schema, preventing errors from invalid queries. Can be disabled for performance. @default `false`.",
           "type": [

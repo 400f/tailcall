@@ -14,6 +14,8 @@ pub enum BuildError {
     OperationNotFound(String),
     #[error("Operation name required in request")]
     OperationNameRequired,
+    #[error("Query depth {depth} exceeds the limit of {limit}")]
+    QueryDepthExceeded { depth: usize, limit: usize },
 }
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]

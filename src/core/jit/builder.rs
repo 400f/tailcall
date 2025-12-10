@@ -69,6 +69,7 @@ pub struct Builder<'a> {
     pub arg_id: Counter<usize>,
     pub field_id: Counter<usize>,
     pub document: &'a ExecutableDocument,
+    pub max_depth: usize,
 }
 
 // TODO: make generic over Value (Input) type
@@ -81,6 +82,7 @@ impl<'a> Builder<'a> {
             index,
             arg_id: Counter::default(),
             field_id: Counter::default(),
+            max_depth: blueprint.server.query_depth,
         }
     }
 
@@ -133,7 +135,8 @@ impl<'a> Builder<'a> {
         selection: &SelectionSet,
         type_condition: &str,
         fragments: &HashMap<&str, &FragmentDefinition>,
-    ) -> Vec<Field<Value>> {
+        depth: usize,
+    ) -> Result<Vec<Field<Value>>, BuildError> {
         let mut fields = vec![];
         let mut fragments_fields = vec![];
         let mut visited = HashSet::new();
@@ -211,13 +214,26 @@ impl<'a> Builder<'a> {
 
                         let id = FieldId::new(self.field_id.next());
 
+                        // Check depth limit before recursing (0 means no limit)
+                        // Only check if there are child selections
+                        if self.max_depth > 0
+                            && !gql_field.selection_set.node.items.is_empty()
+                            && depth >= self.max_depth
+                        {
+                            return Err(BuildError::QueryDepthExceeded {
+                                depth: depth + 1,
+                                limit: self.max_depth,
+                            });
+                        }
+
                         // Recursively gather child fields for the selection set
                         let child_fields = self.iter(
                             None,
                             &gql_field.selection_set.node,
                             type_of.name(),
                             fragments,
-                        );
+                            depth + 1,
+                        )?;
 
                         let ir = match field_def {
                             QueryField::Field((field_def, _)) => field_def.resolver.clone(),
@@ -285,7 +301,8 @@ impl<'a> Builder<'a> {
                             &fragment.selection_set.node,
                             fragment.type_condition.node.on.node.as_str(),
                             fragments,
-                        ));
+                            depth,
+                        )?);
                     }
                 }
                 Selection::InlineFragment(Positioned { node: fragment, .. }) => {
@@ -299,7 +316,8 @@ impl<'a> Builder<'a> {
                         &fragment.selection_set.node,
                         type_of,
                         fragments,
-                    ));
+                        depth,
+                    )?);
                 }
             }
         }
@@ -310,7 +328,7 @@ impl<'a> Builder<'a> {
             fields.push(field);
         }
         fields.sort_by(|a, b| a.id.cmp(&b.id));
-        fields
+        Ok(fields)
     }
     #[inline(always)]
     fn get_type(&self, ty: OperationType) -> Option<&str> {
@@ -361,7 +379,7 @@ impl<'a> Builder<'a> {
         let name = self
             .get_type(operation.ty)
             .ok_or(BuildError::RootOperationTypeNotDefined { operation: operation.ty })?;
-        let fields = self.iter(None, &operation.selection_set.node, name, &fragments);
+        let fields = self.iter(None, &operation.selection_set.node, name, &fragments, 1)?;
 
         let is_introspection_query = operation.selection_set.node.items.iter().any(|f| {
             if let Selection::Field(Positioned { node: gql_field, .. }) = &f.node {
