@@ -409,8 +409,9 @@ mod tests {
 
     #[test]
     fn test_query_depth_from_sdl() {
-        use crate::core::config::Config;
         use tailcall_valid::Validator;
+
+        use crate::core::config::Config;
 
         let config_str = r#"
 schema @server(queryDepth: 0) {
@@ -428,8 +429,9 @@ type Query {
 
     #[test]
     fn test_query_depth_from_sdl_custom() {
-        use crate::core::config::Config;
         use tailcall_valid::Validator;
+
+        use crate::core::config::Config;
 
         let config_str = r#"
 schema @server(queryDepth: 10) {
