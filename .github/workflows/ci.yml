@@ -37,40 +37,6 @@ jobs:
     outputs:
       check_if_build: ${{ steps.check.outputs.check_if_build }}
 
-  test_aws_build:
-    name: Test AWS Lambda Build
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./tailcall-aws-lambda
-
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install musl-tools
-        run: |
-          sudo apt-get update && sudo apt-get install -y musl-tools
-
-      - name: Install Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          target: x86_64-unknown-linux-musl
-          rustflags: -C target-feature=+crt-static -C linker=rust-lld
-
-      - name: Install Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install cargo-lambda
-        run: pip install cargo-lambda
-
-      - name: Build
-        env:
-          RUSTFLAGS: -C target-feature=+crt-static -C linker=rust-lld
-        run: |
-          # Disable sanitizer features in dependencies
-          CARGO_FEATURE_SANITIZE=0 CARGO_FEATURE_SANITIZE_MEMORY=0 cargo lambda build --release --target x86_64-unknown-linux-musl
   test_wasm:
     name: Run Tests (WASM)
     runs-on: ubuntu-latest
@@ -96,32 +62,6 @@ jobs:
 
       - name: Test WASM
         run: wasm-pack test --node
-
-  test_cf:
-    name: Run Tests (Cloudflare)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./tailcall-cloudflare
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          target: wasm32-unknown-unknown
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20.19.1"
-
-      - name: Package Install
-        run: npm install
-
-      - name: Test CF
-        run: npm test
 
   test:
     name: Run Tests on ${{ matrix.build }}
@@ -235,7 +175,7 @@ jobs:
   # TODO: move to separate file to separate responsibilities
   release:
     name: Release
-    needs: [setup_build_matrix, test, draft_release, check_if_build, test_cf, test_wasm]
+    needs: [setup_build_matrix, test, draft_release, check_if_build, test_wasm]
     # TODO: put a condition to separate job that other will depend on to remove duplication?
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
@@ -280,62 +220,11 @@ jobs:
           release_id: ${{ needs.draft_release.outputs.create_release_id }}
           file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}${{ matrix.ext }}
           overwrite: true
-  release_lambda:
-    name: Release (AWS Lambda)
-    needs: [test, draft_release, check_if_build, test_cf]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
 
-    steps:
-      - name: Checkout Current Branch (Fast)
-        uses: actions/checkout@v4
-      - name: Install musl-tools
-        run: |
-          sudo apt-get update && sudo apt-get install -y musl-tools
-
-      - name: Install Correct Toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          target: x86_64-unknown-linux-musl
-          rustflags: -C target-feature=+crt-static -C linker=rust-lld
-
-      - name: Install Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install cargo-lambda
-        run: pip install cargo-lambda
-
-      - name: Build
-        env:
-          APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
-          RUSTFLAGS: -C target-feature=+crt-static -C linker=rust-lld
-        run: |
-          # Disable sanitizer features in dependencies
-          CARGO_FEATURE_SANITIZE=0 CARGO_FEATURE_SANITIZE_MEMORY=0 cargo lambda build -p tailcall-aws-lambda --release --target x86_64-unknown-linux-musl
-
-      - name: Rename Binary with Target Name
-        run: |
-          pwd
-          cp target/lambda/tailcall-aws-lambda/bootstrap target/lambda/tailcall-aws-lambda/tailcall-aws-lambda-bootstrap
-
-      - name: Upload AWS Lambda Bootstrap Binary
-        uses: xresloader/upload-to-github-release@v1
-        with:
-          release_id: ${{ needs.draft_release.outputs.create_release_id }}
-          file: target/lambda/tailcall-aws-lambda/tailcall-aws-lambda-bootstrap
-          overwrite: true
   semantic_release:
     name: Semantic Release
     if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    needs: [draft_release, release, release_lambda]
+    needs: [draft_release, release]
     runs-on: ubuntu-latest
     permissions:
       contents: write
