@@ -17,7 +17,7 @@ use crate::core::{grpc, http};
 pub enum IR {
     Dynamic(DynamicValue<Value>),
     #[strum(to_string = "{0}")]
-    IO(IO),
+    IO(Box<IO>),
     Cache(Cache),
     // TODO: Path can be implement using Pipe
     Path(Box<IR>, Vec<String>),
@@ -41,6 +41,7 @@ pub struct Map {
     pub map: HashMap<String, String>,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, strum_macros::Display)]
 pub enum IO {
     Http {
@@ -124,7 +125,7 @@ impl Cache {
     /// nodes. Then wraps each IO node with the cache primitive.
     pub fn wrap(max_age: NonZeroU64, expr: IR) -> IR {
         expr.modify(&mut move |expr| match expr {
-            IR::IO(io) => Some(IR::Cache(Cache { max_age, io: Box::new(io.to_owned()) })),
+            IR::IO(io) => Some(IR::Cache(Cache { max_age, io: io.clone() })),
             _ => None,
         })
     }
@@ -179,9 +180,9 @@ impl IR {
                     IR::Dynamic(_) => expr,
                     IR::IO(_) => expr,
                     IR::Cache(Cache { io, max_age }) => {
-                        let expr = *IR::IO(*io).modify_box(modifier);
+                        let expr = *IR::IO(io).modify_box(modifier);
                         match expr {
-                            IR::IO(io) => IR::Cache(Cache { io: Box::new(io), max_age }),
+                            IR::IO(io) => IR::Cache(Cache { io, max_age }),
                             expr => expr,
                         }
                     }

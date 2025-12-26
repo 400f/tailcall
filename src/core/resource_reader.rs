@@ -32,7 +32,7 @@ impl FileRead {
 /// Supported Resources by Resource Reader
 pub enum Resource {
     RawPath(String),
-    Request(reqwest::Request),
+    Request(Box<reqwest::Request>),
 }
 
 impl Resource {
@@ -48,6 +48,7 @@ impl Hash for Resource {
         match self {
             Resource::RawPath(path) => path.hash(state),
             Resource::Request(request) => {
+                let request = request.as_ref();
                 request.method().hash(state);
                 request.url().hash(state);
                 for (key, value) in request.headers().iter() {
@@ -64,7 +65,7 @@ impl Hash for Resource {
 
 impl From<reqwest::Request> for Resource {
     fn from(val: reqwest::Request) -> Self {
-        Resource::Request(val)
+        Resource::Request(Box::new(val))
     }
 }
 
@@ -122,7 +123,7 @@ impl std::fmt::Display for Resource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Resource::RawPath(file_path) => write!(f, "{}", file_path),
-            Resource::Request(request_path) => write!(f, "{}", request_path.url()),
+            Resource::Request(request) => write!(f, "{}", request.url()),
         }
     }
 }
@@ -169,7 +170,7 @@ impl Reader for Direct {
             }
             Resource::Request(request) => {
                 let request_url = request.url().to_string();
-                let response = self.runtime.http.execute(request).await?;
+                let response = self.runtime.http.execute(*request).await?;
                 let content = String::from_utf8(response.body.to_vec())?;
 
                 FileRead { path: request_url, content }
@@ -230,7 +231,7 @@ mod test {
     impl Resource {
         fn as_request(&self) -> Option<&reqwest::Request> {
             match self {
-                Resource::Request(request) => Some(request),
+                Resource::Request(request) => Some(request.as_ref()),
                 _ => None,
             }
         }

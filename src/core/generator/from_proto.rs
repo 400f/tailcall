@@ -582,7 +582,7 @@ mod test {
         let set3 = compile_protobuf(&[protobuf::GREETINGS_B])?;
         let url = "http://localhost:50051";
 
-        let actual = from_proto(&[set.clone()], "Query", url)?.to_sdl();
+        let actual = from_proto(std::slice::from_ref(&set), "Query", url)?.to_sdl();
         let expected = from_proto(&[set1, set2, set3], "Query", url)?.to_sdl();
 
         pretty_assertions::assert_eq!(actual, expected);

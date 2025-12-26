@@ -106,7 +106,10 @@ impl<'a> MustachePartsValidator<'a> {
             IR::Merge(resolvers) => {
                 Valid::from_iter(resolvers, |resolver| self.validate_resolver(resolver)).unit()
             }
-            IR::IO(IO::Http { req_template, .. }) => {
+            IR::IO(io) if matches!(io.as_ref(), IO::Http { .. }) => {
+                let IO::Http { req_template, .. } = io.as_ref() else {
+                    unreachable!()
+                };
                 Valid::from_iter(req_template.root_url.expression_segments(), |parts| {
                     self.validate(parts, false).trace("path")
                 })
@@ -120,7 +123,10 @@ impl<'a> MustachePartsValidator<'a> {
                 .unit()
                 .trace(config::Http::trace_name().as_str())
             }
-            IR::IO(IO::GraphQL { req_template, .. }) => {
+            IR::IO(io) if matches!(io.as_ref(), IO::GraphQL { .. }) => {
+                let IO::GraphQL { req_template, .. } = io.as_ref() else {
+                    unreachable!()
+                };
                 Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
                     Valid::from_iter(mustache.expression_segments(), |parts| {
                         self.validate(parts, true).trace("headers")
@@ -140,7 +146,10 @@ impl<'a> MustachePartsValidator<'a> {
                 .unit()
                 .trace(config::GraphQL::trace_name().as_str())
             }
-            IR::IO(IO::Grpc { req_template, .. }) => {
+            IR::IO(io) if matches!(io.as_ref(), IO::Grpc { .. }) => {
+                let IO::Grpc { req_template, .. } = io.as_ref() else {
+                    unreachable!()
+                };
                 Valid::from_iter(req_template.url.expression_segments(), |parts| {
                     self.validate(parts, false).trace("path")
                 })

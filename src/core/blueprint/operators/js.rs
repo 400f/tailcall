@@ -12,5 +12,5 @@ pub struct CompileJs<'a> {
 pub fn compile_js(inputs: CompileJs) -> Valid<IR, BlueprintError> {
     let name = &inputs.js.name;
     Valid::from_option(inputs.script.as_ref(), BlueprintError::ScriptIsRequired)
-        .map(|_| IR::IO(IO::Js { name: name.to_string() }))
+        .map(|_| IR::IO(Box::new(IO::Js { name: name.to_string() })))
 }

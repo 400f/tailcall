@@ -135,7 +135,7 @@ impl Response<Bytes> {
 
                 for detail in status.details {
                     let type_url = &detail.type_url;
-                    let type_name = type_url.split('/').last().unwrap_or("");
+                    let type_name = type_url.split('/').next_back().unwrap_or("");
 
                     if let Some(message) = operation.find_message(type_name) {
                         if let Ok(decoded) = message.decode(detail.value.as_slice()) {
@@ -155,12 +155,12 @@ impl Response<Bytes> {
         }
         obj.insert(Name::new("details"), ConstValue::List(status_details));
 
-        let error = Error::GRPC {
+        let error = Error::GRPC(Box::new(crate::core::ir::GrpcError {
             grpc_code: grpc_status.code() as i32,
             grpc_description: grpc_status.code().description().to_owned(),
             grpc_status_message: grpc_status.message().to_owned(),
             grpc_status_details: ConstValue::Object(obj),
-        };
+        }));
 
         // TODO: because of this conversion to anyhow::Error
         // we lose additional details that could be added

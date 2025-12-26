@@ -24,6 +24,7 @@ impl<'a, Value> Synth<'a, Value> {
     }
 }
 
+#[allow(clippy::result_large_err)]
 impl<'a, Value> Synth<'a, Value>
 where
     Value: JsonLike<'a> + Clone + std::fmt::Debug,

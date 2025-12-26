@@ -8,6 +8,14 @@ use thiserror::Error;
 use crate::core::jit::graphql_error::{Error as ExtensionError, ErrorExtensions};
 use crate::core::{auth, cache, worker, Errata};
 
+#[derive(Debug, Clone)]
+pub struct GrpcError {
+    pub grpc_code: i32,
+    pub grpc_description: String,
+    pub grpc_status_message: String,
+    pub grpc_status_details: ConstValue,
+}
+
 #[derive(From, Debug, Error, Clone)]
 pub enum Error {
     IO(String),
@@ -15,12 +23,7 @@ pub enum Error {
         message: String,
         body: String,
     },
-    GRPC {
-        grpc_code: i32,
-        grpc_description: String,
-        grpc_status_message: String,
-        grpc_status_details: ConstValue,
-    },
+    GRPC(Box<GrpcError>),
 
     APIValidation(Vec<String>),
 
@@ -50,15 +53,17 @@ impl From<Error> for Errata {
     fn from(value: Error) -> Self {
         match value {
             Error::IO(message) => Errata::new("IOException").description(message),
-            Error::HTTP{ message, body:_ } => Errata::new("HTTP Error")
-                .description(message),
-            Error::GRPC {
-                grpc_code,
-                grpc_description,
-                grpc_status_message,
-                grpc_status_details: _,
-            } => Errata::new("gRPC Error")
-                .description(format!("status: {grpc_code}, description: `{grpc_description}`, message: `{grpc_status_message}`")),
+            Error::HTTP { message, body: _ } => Errata::new("HTTP Error").description(message),
+            Error::GRPC(grpc_error) => {
+                let GrpcError {
+                    grpc_code,
+                    grpc_description,
+                    grpc_status_message,
+                    grpc_status_details: _,
+                } = *grpc_error;
+                Errata::new("gRPC Error")
+                    .description(format!("status: {grpc_code}, description: `{grpc_description}`, message: `{grpc_status_message}`"))
+            }
             Error::APIValidation(errors) => Errata::new("API Validation Error")
                 .caused_by(errors.iter().map(|e| Errata::new(e)).collect::<Vec<_>>()),
             Error::Deserialize(message) => {
@@ -67,12 +72,10 @@ impl From<Error> for Errata {
             Error::ExprEval(message) => {
                 Errata::new("Expression Evaluation Error").description(message)
             }
-            Error::Auth(err) => {
-                Errata::new("Authentication Failure").description(err.to_string())
-            }
+            Error::Auth(err) => Errata::new("Authentication Failure").description(err.to_string()),
             Error::Worker(err) => Errata::new("Worker Error").description(err.to_string()),
             Error::Cache(err) => Errata::new("Cache Error").description(err.to_string()),
-            Error::Entity(message) => Errata::new("Entity Resolver Error").description(message)
+            Error::Entity(message) => Errata::new("Entity Resolver Error").description(message),
         }
     }
 }
@@ -80,17 +83,11 @@ impl From<Error> for Errata {
 impl ErrorExtensions for Error {
     fn extend(&self) -> ExtensionError {
         ExtensionError::new(format!("{}", self)).extend_with(|_err, e| {
-            if let Error::GRPC {
-                grpc_code,
-                grpc_description,
-                grpc_status_message,
-                grpc_status_details,
-            } = self
-            {
-                e.set("grpcCode", *grpc_code);
-                e.set("grpcDescription", grpc_description);
-                e.set("grpcStatusMessage", grpc_status_message);
-                e.set("grpcStatusDetails", grpc_status_details.clone());
+            if let Error::GRPC(grpc_error) = self {
+                e.set("grpcCode", grpc_error.grpc_code);
+                e.set("grpcDescription", &grpc_error.grpc_description);
+                e.set("grpcStatusMessage", &grpc_error.grpc_status_message);
+                e.set("grpcStatusDetails", grpc_error.grpc_status_details.clone());
             }
 
             if let Error::HTTP { message: _, body } = self {

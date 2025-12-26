@@ -20,14 +20,14 @@ pub struct Index {
 
 #[derive(Debug)]
 pub enum QueryField {
-    Field((FieldDefinition, IndexMap<String, InputFieldDefinition>)),
+    Field(Box<(FieldDefinition, IndexMap<String, InputFieldDefinition>)>),
     InputField(InputFieldDefinition),
 }
 
 impl QueryField {
     pub fn get_arg(&self, arg_name: &str) -> Option<&InputFieldDefinition> {
         match self {
-            QueryField::Field((_, args)) => args.get(arg_name),
+            QueryField::Field(inner) => inner.1.get(arg_name),
             QueryField::InputField(_) => None,
         }
     }
@@ -128,7 +128,7 @@ impl From<&Blueprint> for Index {
                         );
                         fields_map.insert(
                             field.name.clone(),
-                            QueryField::Field((field.clone(), args_map)),
+                            QueryField::Field(Box::new((field.clone(), args_map))),
                         );
                     }
 
@@ -149,7 +149,10 @@ impl From<&Blueprint> for Index {
                                 .map(|v| (v.name.clone(), v.clone()))
                                 .collect::<Vec<_>>(),
                         );
-                        fields_map.insert(field.name.clone(), QueryField::Field((field, args_map)));
+                        fields_map.insert(
+                            field.name.clone(),
+                            QueryField::Field(Box::new((field, args_map))),
+                        );
                     }
 
                     map.insert(

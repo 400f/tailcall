@@ -48,7 +48,7 @@ impl AppContext {
                     let upstream_batch = &blueprint.upstream.batch;
                     field.map_expr(|expr| {
                         expr.modify(&mut |expr| match expr {
-                            IR::IO(io) => match io {
+                            IR::IO(io) => match io.as_ref() {
                                 IO::Http {
                                     req_template, group_by, is_list, dedupe, hook, ..
                                 } => {
@@ -61,14 +61,14 @@ impl AppContext {
                                     )
                                     .to_data_loader(upstream_batch.clone().unwrap_or_default());
 
-                                    let result = Some(IR::IO(IO::Http {
+                                    let result = Some(IR::IO(Box::new(IO::Http {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId::new(http_data_loaders.len())),
                                         hook: hook.clone(),
                                         is_list,
                                         dedupe,
-                                    }));
+                                    })));
 
                                     http_data_loaders.push(data_loader);
 
@@ -83,13 +83,13 @@ impl AppContext {
                                                 upstream_batch.clone().unwrap_or_default(),
                                             );
 
-                                    let result = Some(IR::IO(IO::GraphQL {
+                                    let result = Some(IR::IO(Box::new(IO::GraphQL {
                                         req_template: req_template.clone(),
                                         field_name: field_name.clone(),
                                         batch: *batch,
                                         dl_id: Some(DataLoaderId::new(gql_data_loaders.len())),
                                         dedupe,
-                                    }));
+                                    })));
 
                                     gql_data_loaders.push(graphql_data_loader);
 
@@ -107,20 +107,20 @@ impl AppContext {
                                         upstream_batch.clone().unwrap_or_default(),
                                     );
 
-                                    let result = Some(IR::IO(IO::Grpc {
+                                    let result = Some(IR::IO(Box::new(IO::Grpc {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId::new(grpc_data_loaders.len())),
                                         dedupe,
                                         hook: hook.clone(),
-                                    }));
+                                    })));
 
                                     grpc_data_loaders.push(data_loader);
 
                                     result
                                 }
                                 IO::Js { name: method } => {
-                                    Some(IR::IO(IO::Js { name: method.clone() }))
+                                    Some(IR::IO(Box::new(IO::Js { name: method.clone() })))
                                 }
                             },
                             _ => None,

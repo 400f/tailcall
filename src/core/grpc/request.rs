@@ -161,18 +161,13 @@ mod tests {
 
         if let Err(err) = result {
             match err.downcast_ref::<Error>() {
-                Some(Error::GRPC {
-                    grpc_code,
-                    grpc_description,
-                    grpc_status_message,
-                    grpc_status_details,
-                }) => {
+                Some(Error::GRPC(grpc_error)) => {
                     let code = Code::InvalidArgument;
-                    assert_eq!(*grpc_code, code as i32);
-                    assert_eq!(*grpc_description, code.description());
-                    assert_eq!(*grpc_status_message, "description message");
+                    assert_eq!(grpc_error.grpc_code, code as i32);
+                    assert_eq!(grpc_error.grpc_description, code.description());
+                    assert_eq!(grpc_error.grpc_status_message, "description message");
                     assert_eq!(
-                        serde_json::to_value(grpc_status_details)?,
+                        serde_json::to_value(&grpc_error.grpc_status_details)?,
                         json!({
                             "code": 3,
                             "message": "error message",
