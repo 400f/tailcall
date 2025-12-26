@@ -106,23 +106,23 @@ pub fn compile_http(
                     None
                 };
 
-                IR::IO(IO::Http {
+                IR::IO(Box::new(IO::Http {
                     req_template,
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
                     dl_id: None,
                     is_list,
                     dedupe,
                     hook,
-                })
+                }))
             } else {
-                IR::IO(IO::Http {
+                IR::IO(Box::new(IO::Http {
                     req_template,
                     group_by: None,
                     dl_id: None,
                     is_list,
                     dedupe,
                     hook,
-                })
+                }))
             };
             (io, &http.select)
         })

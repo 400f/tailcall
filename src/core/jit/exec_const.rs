@@ -34,7 +34,7 @@ impl ConstValueExecutor {
         Ok(Self::from(plan))
     }
 
-    pub async fn execute<'a>(
+    pub async fn execute(
         self,
         app_ctx: &Arc<AppContext>,
         req_ctx: &RequestContext,

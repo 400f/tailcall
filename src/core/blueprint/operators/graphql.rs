@@ -85,6 +85,12 @@ pub fn compile_graphql(
             let field_name = graphql.name.clone();
             let batch = graphql.batch;
             let dedupe = graphql.dedupe;
-            IR::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None, dedupe })
+            IR::IO(Box::new(IO::GraphQL {
+                req_template,
+                field_name,
+                batch,
+                dl_id: None,
+                dedupe,
+            }))
         })
 }

@@ -230,15 +230,21 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, BlueprintError> {
             let hook = WorkerHooks::try_new(None, on_response).ok();
 
             let io = if !grpc.batch_key.is_empty() {
-                IR::IO(IO::Grpc {
+                IR::IO(Box::new(IO::Grpc {
                     req_template,
                     group_by: Some(GroupBy::new(grpc.batch_key.clone(), None)),
                     dl_id: None,
                     dedupe,
                     hook,
-                })
+                }))
             } else {
-                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None, dedupe, hook })
+                IR::IO(Box::new(IO::Grpc {
+                    req_template,
+                    group_by: None,
+                    dl_id: None,
+                    dedupe,
+                    hook,
+                }))
             };
 
             (io, &grpc.select)
