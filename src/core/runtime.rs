@@ -40,7 +40,7 @@ impl TargetRuntime {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "cli"))]
 pub mod test {
     use std::borrow::Cow;
     use std::collections::HashMap;
