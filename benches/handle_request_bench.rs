@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
+use bytes::Bytes;
 use criterion::Criterion;
 use http::Request;
+use http_body_util::Full;
 use tailcall::cli::server::server_config::ServerConfig;
 use tailcall::core::async_graphql_hyper::GraphQLRequest;
 use tailcall::core::blueprint::Blueprint;
@@ -35,10 +37,10 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
                 let req = Request::builder()
                     .method("POST")
                     .uri("http://localhost:8000/graphql")
-                    .body(hyper::Body::from(QUERY))
+                    .body(Full::new(Bytes::from(QUERY)))
                     .unwrap();
 
-                let _ = handle_request::<GraphQLRequest>(req, server_config.app_ctx.clone())
+                let _ = handle_request::<GraphQLRequest, _>(req, server_config.app_ctx.clone())
                     .await
                     .unwrap();
             });
@@ -58,10 +60,10 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
                 let req = Request::builder()
                     .method("POST")
                     .uri("http://localhost:8000/graphql")
-                    .body(hyper::Body::from(QUERY))
+                    .body(Full::new(Bytes::from(QUERY)))
                     .unwrap();
 
-                let _ = handle_request::<GraphQLRequest>(req, server_config.app_ctx.clone())
+                let _ = handle_request::<GraphQLRequest, _>(req, server_config.app_ctx.clone())
                     .await
                     .unwrap();
             });

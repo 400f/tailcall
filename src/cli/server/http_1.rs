@@ -1,38 +1,22 @@
 use std::sync::Arc;
 
-use hyper::service::{make_service_fn, service_fn};
+use hyper::server::conn::http1;
+use hyper::service::service_fn;
+use hyper_util::rt::TokioIo;
+use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
 use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::core::http::handle_request;
-use crate::core::Errata;
 
 pub async fn start_http_1(
     sc: Arc<ServerConfig>,
     server_up_sender: Option<oneshot::Sender<()>>,
 ) -> anyhow::Result<()> {
     let addr = sc.addr();
-    let make_svc_single_req = make_service_fn(|_conn| {
-        let state = Arc::clone(&sc);
-        async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
-            }))
-        }
-    });
+    let listener = TcpListener::bind(&addr).await?;
 
-    let make_svc_batch_req = make_service_fn(|_conn| {
-        let state = Arc::clone(&sc);
-        async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone())
-            }))
-        }
-    });
-    let builder = hyper::Server::try_bind(&addr)
-        .map_err(Errata::from)?
-        .http1_pipeline_flush(sc.app_ctx.blueprint.server.pipeline_flush);
     super::log_launch(sc.as_ref());
 
     if let Some(sender) = server_up_sender {
@@ -41,14 +25,32 @@ pub async fn start_http_1(
             .or(Err(anyhow::anyhow!("Failed to send message")))?;
     }
 
-    let server: std::prelude::v1::Result<(), hyper::Error> =
-        if sc.blueprint.server.enable_batch_requests {
-            builder.serve(make_svc_batch_req).await
-        } else {
-            builder.serve(make_svc_single_req).await
-        };
+    let enable_batch = sc.app_ctx.blueprint.server.enable_batch_requests;
+    let pipeline_flush = sc.app_ctx.blueprint.server.pipeline_flush;
 
-    let result = server.map_err(Errata::from);
+    loop {
+        let (stream, _) = listener.accept().await?;
+        let io = TokioIo::new(stream);
+        let app_ctx = sc.app_ctx.clone();
 
-    Ok(result?)
+        tokio::task::spawn(async move {
+            let service = service_fn(move |req| {
+                let app_ctx = app_ctx.clone();
+                async move {
+                    if enable_batch {
+                        handle_request::<GraphQLBatchRequest, _>(req, app_ctx).await
+                    } else {
+                        handle_request::<GraphQLRequest, _>(req, app_ctx).await
+                    }
+                }
+            });
+
+            let mut conn = http1::Builder::new();
+            conn.pipeline_flush(pipeline_flush);
+
+            if let Err(err) = conn.serve_connection(io, service).await {
+                tracing::debug!("Error serving connection: {:?}", err);
+            }
+        });
+    }
 }

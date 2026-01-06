@@ -1,6 +1,5 @@
 use anyhow::Result;
 use http::{Request, Response};
-use hyper::Body;
 use once_cell::sync::Lazy;
 use opentelemetry::metrics::Counter;
 use opentelemetry::KeyValue;
@@ -10,6 +9,7 @@ use opentelemetry_semantic_conventions::trace::{
 };
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
+use crate::core::async_graphql_hyper::Body;
 use crate::core::blueprint::telemetry::Telemetry;
 
 static HTTP_SERVER_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
@@ -18,7 +18,7 @@ static HTTP_SERVER_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
     meter
         .u64_counter("http.server.request.count")
         .with_description("Number of incoming request handled")
-        .init()
+        .build()
 });
 
 #[derive(Default)]
@@ -27,7 +27,7 @@ pub struct RequestCounter {
 }
 
 impl RequestCounter {
-    pub fn new(telemetry: &Telemetry, req: &Request<Body>) -> Self {
+    pub fn new<B>(telemetry: &Telemetry, req: &Request<B>) -> Self {
         if telemetry.export.is_none() {
             return Self::default();
         }
@@ -71,7 +71,7 @@ pub fn get_response_status_code(response: &Response<Body>) -> KeyValue {
     KeyValue::new(HTTP_RESPONSE_STATUS_CODE, response.status().as_u16() as i64)
 }
 
-pub fn propagate_context(req: &Request<Body>) {
+pub fn propagate_context<B>(req: &Request<B>) {
     let context = opentelemetry::global::get_text_map_propagator(|propagator| {
         propagator.extract(&HeaderExtractor(req.headers()))
     });

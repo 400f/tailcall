@@ -27,7 +27,7 @@ static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
     meter
         .u64_counter("http.client.request.count")
         .with_description("Number of outgoing requests")
-        .init()
+        .build()
 });
 
 #[derive(Default)]
@@ -92,9 +92,6 @@ impl NativeHttp {
             .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
             .timeout(Duration::from_secs(upstream.timeout))
             .connect_timeout(Duration::from_secs(upstream.connect_timeout))
-            .http2_keep_alive_interval(Some(Duration::from_secs(upstream.keep_alive_interval)))
-            .http2_keep_alive_timeout(Duration::from_secs(upstream.keep_alive_timeout))
-            .http2_keep_alive_while_idle(upstream.keep_alive_while_idle)
             .pool_idle_timeout(Some(Duration::from_secs(upstream.pool_idle_timeout)))
             .pool_max_idle_per_host(upstream.pool_max_idle_per_host)
             .user_agent(upstream.user_agent.clone())

@@ -1,18 +1,18 @@
 #![allow(clippy::too_many_arguments)]
 use std::sync::Arc;
 
-use hyper::server::conn::AddrIncoming;
-use hyper::service::{make_service_fn, service_fn};
-use hyper::Server;
-use hyper_rustls::TlsAcceptor;
+use hyper::server::conn::http2;
+use hyper::service::service_fn;
+use hyper_util::rt::{TokioExecutor, TokioIo};
 use rustls_pki_types::CertificateDer;
+use tokio::net::TcpListener;
 use tokio::sync::oneshot;
+use tokio_rustls::TlsAcceptor;
 
 use super::server_config::ServerConfig;
 use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::core::config::PrivateKey;
 use crate::core::http::handle_request;
-use crate::core::Errata;
 
 pub async fn start_http_2(
     sc: Arc<ServerConfig>,
@@ -20,31 +20,18 @@ pub async fn start_http_2(
     key: PrivateKey,
     server_up_sender: Option<oneshot::Sender<()>>,
 ) -> anyhow::Result<()> {
+    // Install the ring crypto provider for TLS
+    let _ = rustls::crypto::ring::default_provider().install_default();
+
     let addr = sc.addr();
-    let incoming = AddrIncoming::bind(&addr)?;
-    let acceptor = TlsAcceptor::builder()
-        .with_single_cert(cert, key.into_inner())?
-        .with_http2_alpn()
-        .with_incoming(incoming);
-    let make_svc_single_req = make_service_fn(|_conn| {
-        let state = Arc::clone(&sc);
-        async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
-            }))
-        }
-    });
+    let listener = TcpListener::bind(&addr).await?;
 
-    let make_svc_batch_req = make_service_fn(|_conn| {
-        let state = Arc::clone(&sc);
-        async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone())
-            }))
-        }
-    });
-
-    let builder = Server::builder(acceptor).http2_only(true);
+    // Create TLS config
+    let mut tls_config = rustls::ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(cert, key.into_inner())?;
+    tls_config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
+    let tls_acceptor = TlsAcceptor::from(Arc::new(tls_config));
 
     super::log_launch(sc.as_ref());
 
@@ -54,14 +41,41 @@ pub async fn start_http_2(
             .or(Err(anyhow::anyhow!("Failed to send message")))?;
     }
 
-    let server: std::prelude::v1::Result<(), hyper::Error> =
-        if sc.blueprint.server.enable_batch_requests {
-            builder.serve(make_svc_batch_req).await
-        } else {
-            builder.serve(make_svc_single_req).await
-        };
+    let enable_batch = sc.app_ctx.blueprint.server.enable_batch_requests;
 
-    let result = server.map_err(Errata::from);
+    loop {
+        let (stream, _) = listener.accept().await?;
+        let tls_acceptor = tls_acceptor.clone();
+        let app_ctx = sc.app_ctx.clone();
 
-    Ok(result?)
+        tokio::task::spawn(async move {
+            let tls_stream = match tls_acceptor.accept(stream).await {
+                Ok(stream) => stream,
+                Err(err) => {
+                    tracing::error!("TLS handshake error: {:?}", err);
+                    return;
+                }
+            };
+
+            let io = TokioIo::new(tls_stream);
+
+            let service = service_fn(move |req| {
+                let app_ctx = app_ctx.clone();
+                async move {
+                    if enable_batch {
+                        handle_request::<GraphQLBatchRequest, _>(req, app_ctx).await
+                    } else {
+                        handle_request::<GraphQLRequest, _>(req, app_ctx).await
+                    }
+                }
+            });
+
+            if let Err(err) = http2::Builder::new(TokioExecutor::new())
+                .serve_connection(io, service)
+                .await
+            {
+                tracing::debug!("Error serving connection: {:?}", err);
+            }
+        });
+    }
 }

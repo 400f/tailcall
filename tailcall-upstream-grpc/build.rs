@@ -11,6 +11,6 @@ fn main() {
 
     tonic_build::configure()
         .file_descriptor_set_path(out_dir.join("news_descriptor.bin"))
-        .compile(&[&news], &[news.parent().unwrap()])
+        .compile_protos(&[&news], &[news.parent().unwrap()])
         .unwrap();
 }

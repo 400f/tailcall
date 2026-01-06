@@ -1,11 +1,14 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use hyper::body::Bytes;
+use bytes::Bytes;
+use http_body_util::{BodyExt, Full};
 use lambda_http::RequestExt;
 use reqwest::Client;
 use tailcall::core::http::Response;
 use tailcall::core::HttpIO;
+
+pub type Body = Full<Bytes>;
 
 #[derive(Clone)]
 pub struct LambdaHttp {
@@ -36,8 +39,7 @@ impl HttpIO for LambdaHttp {
     }
 }
 
-pub fn to_request(req: lambda_http::Request) -> anyhow::Result<http::Request<hyper::Body>> {
-    // TODO: Update hyper to 1.0 to make conversions easier
+pub fn to_request(req: lambda_http::Request) -> anyhow::Result<http::Request<Body>> {
     let method: http::Method = match req.method().to_owned() {
         lambda_http::http::Method::CONNECT => http::Method::CONNECT,
         lambda_http::http::Method::DELETE => http::Method::DELETE,
@@ -72,22 +74,20 @@ pub fn to_request(req: lambda_http::Request) -> anyhow::Result<http::Request<hyp
         req2 = req2.header(key, value);
     }
 
-    Ok(req2.body(hyper::Body::from(req.body().to_vec()))?)
+    Ok(req2.body(Full::new(Bytes::from(req.body().to_vec())))?)
 }
 
 pub async fn to_response(
-    res: http::Response<hyper::Body>,
+    res: http::Response<Body>,
 ) -> Result<lambda_http::Response<lambda_http::Body>, lambda_http::http::Error> {
-    // TODO: Update hyper to 1.0 to make conversions easier
     let mut build = lambda_http::Response::builder().status(res.status().as_u16());
 
     for (k, v) in res.headers() {
         build = build.header(k.to_string(), v.as_bytes());
     }
 
-    build.body(lambda_http::Body::Binary(Vec::from(
-        hyper::body::to_bytes(res.into_body()).await.unwrap(),
-    )))
+    let body_bytes = res.into_body().collect().await.unwrap().to_bytes();
+    build.body(lambda_http::Body::Binary(body_bytes.to_vec()))
 }
 
 pub fn init_http() -> Arc<LambdaHttp> {
@@ -130,7 +130,7 @@ mod tests {
             .status(200)
             .header("content-type", "application/json")
             .header("x-custom-header", "custom-value")
-            .body(hyper::Body::from("Hello, world!"))
+            .body(Full::new(Bytes::from("Hello, world!")))
             .unwrap();
         let lambda_res = to_response(res).await.unwrap();
         assert_eq!(lambda_res.status(), StatusCode::OK);

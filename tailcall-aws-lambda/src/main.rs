@@ -45,7 +45,7 @@ async fn main() -> Result<(), Error> {
     let app_ctx = Arc::new(AppContext::new(blueprint, runtime, endpoints));
 
     run(service_fn(|event| async {
-        let resp = handle_request::<GraphQLRequest>(to_request(event)?, app_ctx.clone()).await?;
+        let resp = handle_request::<GraphQLRequest, _>(to_request(event)?, app_ctx.clone()).await?;
         Ok::<Response<Body>, Error>(to_response(resp).await?)
     }))
     .await

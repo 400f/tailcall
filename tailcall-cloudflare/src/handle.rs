@@ -3,13 +3,12 @@ use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 use http::{Request, Response};
-use hyper::Body;
 use lazy_static::lazy_static;
 use tailcall::core::app_context::AppContext;
 use tailcall::core::async_graphql_hyper::GraphQLRequest;
 use tailcall::core::http::{handle_request, showcase};
 
-use crate::http::{to_request, to_response};
+use crate::http::{to_request, to_response, Body};
 use crate::runtime;
 
 lazy_static! {
@@ -34,7 +33,7 @@ pub async fn fetch(
         Ok(app_ctx) => app_ctx,
         Err(e) => return to_response(e).await,
     };
-    let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
+    let resp = handle_request::<GraphQLRequest, _>(req, app_ctx).await?;
     to_response(resp).await
 }
 
@@ -62,7 +61,7 @@ async fn get_app_ctx(
     }
 
     let runtime = runtime::init(env)?;
-    match showcase::create_app_ctx::<GraphQLRequest>(req, runtime, true).await? {
+    match showcase::create_app_ctx::<GraphQLRequest, _>(req, runtime, true).await? {
         Ok(app_ctx) => {
             let app_ctx: Arc<AppContext> = Arc::new(app_ctx);
             if let Some(file_path) = file_path {
