@@ -1,13 +1,14 @@
 use anyhow::Result;
 use async_graphql_value::{ConstValue, Name};
+use bytes::Bytes;
 use derive_setters::Setters;
-use hyper::body::Bytes;
-use hyper::Body;
+use http_body_util::{BodyExt, Full};
 use indexmap::IndexMap;
 use prost::Message;
 use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
+use crate::core::async_graphql_hyper::Body;
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::ir::Error;
 
@@ -77,10 +78,10 @@ impl Response<Bytes> {
         Ok(Response { status, headers, body })
     }
 
-    pub async fn from_hyper(resp: http::Response<hyper::Body>) -> Result<Self> {
+    pub async fn from_hyper(resp: http::Response<Body>) -> Result<Self> {
         let status = resp.status();
         let headers = resp.headers().to_owned();
-        let body = hyper::body::to_bytes(resp.into_body()).await?;
+        let body = resp.into_body().collect().await?.to_bytes();
         Ok(Response { status, headers, body })
     }
 
@@ -179,7 +180,7 @@ impl Response<Bytes> {
 
 impl From<Response<Bytes>> for http::Response<Body> {
     fn from(resp: Response<Bytes>) -> Self {
-        let mut response = http::Response::new(Body::from(resp.body));
+        let mut response = http::Response::new(Full::new(resp.body));
         *response.headers_mut() = resp.headers;
         *response.status_mut() = resp.status;
         response

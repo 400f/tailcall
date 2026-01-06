@@ -4,6 +4,8 @@ use std::fmt::Display;
 use std::panic;
 use std::sync::Arc;
 
+use bytes::Bytes;
+use http_body_util::{BodyExt, Full};
 use serde_json::json;
 use tailcall::core::app_context::AppContext;
 use tailcall::core::async_graphql_hyper::GraphQLRequest;
@@ -19,6 +21,8 @@ mod runtime;
 
 extern crate http as http_crate;
 
+pub type Body = Full<Bytes>;
+
 #[wasm_bindgen]
 pub struct TailcallExecutor {
     app_context: Arc<AppContext>,
@@ -32,12 +36,13 @@ impl TailcallExecutor {
     async fn execute_inner(&self, query: String) -> anyhow::Result<String> {
         let body = json!({"query":query}).to_string();
         let req = http_crate::Request::post("http://fake.host/graphql")
-            .body(hyper::body::Body::from(body))?;
+            .body(Full::new(Bytes::from(body)))?;
 
-        let resp = handle_request::<GraphQLRequest>(req, self.app_context.clone()).await?;
+        let resp = handle_request::<GraphQLRequest, _>(req, self.app_context.clone()).await?;
         tracing::debug!("{:#?}", resp);
 
-        let body_bytes = hyper::body::to_bytes(resp.into_body()).await?;
+        // Full<Bytes> error type is Infallible, so this unwrap is safe
+        let body_bytes = resp.into_body().collect().await.unwrap().to_bytes();
         let body_str = String::from_utf8(body_bytes.to_vec())?;
         Ok(body_str)
     }

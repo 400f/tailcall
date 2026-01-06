@@ -6,12 +6,15 @@ use std::sync::Arc;
 use std::{fs, panic};
 
 use anyhow::Context;
+use bytes::Bytes;
 use colored::Colorize;
 use futures_util::future::join_all;
 use http::{Request, Response};
-use hyper::Body;
+use http_body_util::{BodyExt, Full};
 use serde::{Deserialize, Serialize};
 use tailcall::core::app_context::AppContext;
+
+type Body = Full<Bytes>;
 use tailcall::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::core::blueprint::{Blueprint, BlueprintError};
 use tailcall::core::config::reader::ConfigReader;
@@ -167,7 +170,8 @@ async fn run_query_tests_on_spec(
                 headers,
                 body: Some(APIBody::Value(
                     serde_json::from_slice(
-                        &hyper::body::to_bytes(response.into_body()).await.unwrap(),
+                        // Full<Bytes> error type is Infallible, so this unwrap is safe
+                        &response.into_body().collect().await.unwrap().to_bytes(),
                     )
                     .unwrap_or_default(),
                 )),
@@ -276,7 +280,7 @@ async fn run_test(
         let body = request
             .body
             .as_ref()
-            .map(|body| Body::from(body.to_bytes()))
+            .map(|body| Full::new(Bytes::from(body.to_bytes())))
             .unwrap_or_default();
 
         let method = request.method.clone();
@@ -295,9 +299,9 @@ async fn run_test(
                 .body(body)?;
 
             if app_ctx.blueprint.server.enable_batch_requests {
-                handle_request::<GraphQLBatchRequest>(req, app_ctx).await
+                handle_request::<GraphQLBatchRequest, _>(req, app_ctx).await
             } else {
-                handle_request::<GraphQLRequest>(req, app_ctx).await
+                handle_request::<GraphQLRequest, _>(req, app_ctx).await
             }
         })
     });
@@ -315,7 +319,8 @@ async fn run_test(
     // ensure all the received responses are the same.
     for response in responses {
         let (head, body) = response.into_parts();
-        let body = hyper::body::to_bytes(body).await?;
+        // Full<Bytes> error type is Infallible, so this unwrap is safe
+        let body = body.collect().await.unwrap().to_bytes();
 
         if let Some((_, base_body)) = &base_response {
             if *base_body != body {
@@ -327,5 +332,5 @@ async fn run_test(
     }
 
     let (head, body) = base_response.ok_or_else(|| anyhow::anyhow!("No Response received."))?;
-    Ok(Response::from_parts(head, Body::from(body)))
+    Ok(Response::from_parts(head, Full::new(body)))
 }

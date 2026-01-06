@@ -74,20 +74,9 @@ mod tests {
     use std::collections::HashMap;
 
     use http_cache::HttpVersion;
-    use reqwest::{Method, Response, ResponseBuilderExt};
     use url::Url;
 
     use super::*;
-
-    fn convert_response(response: HttpResponse) -> Result<Response> {
-        let ret_res = http::Response::builder()
-            .status(response.status)
-            .url(response.url)
-            .version(response.version.into())
-            .body(response.body)?;
-
-        Ok(Response::from(ret_res))
-    }
 
     async fn insert_key_into_cache(manager: &HttpCacheManager, key: &str) {
         let request_url = "http://localhost:8080/test";
@@ -100,15 +89,22 @@ mod tests {
             url: url.clone(),
             version: HttpVersion::Http11,
         };
-        let resp = convert_response(http_resp.clone()).unwrap();
-        let request: reqwest::Request =
-            reqwest::Request::new(Method::GET, request_url.parse().unwrap());
+
+        // Build http::Request for CachePolicy
+        let http_request = http::Request::builder()
+            .method("GET")
+            .uri(request_url)
+            .body(())
+            .unwrap();
+
+        // Build http::Response for CachePolicy
+        let http_response = http::Response::builder().status(200).body(()).unwrap();
 
         let _ = manager
             .put(
                 key.to_string(),
                 http_resp,
-                CachePolicy::new(&request, &resp),
+                CachePolicy::new(&http_request, &http_response),
             )
             .await
             .unwrap();

@@ -11,5 +11,5 @@ mod typed_variables;
 
 pub use endpoint_set::{Checked, EndpointSet, Unchecked};
 
-type Request = http::Request<hyper::Body>;
+type Request = http::Request<http_body_util::Full<bytes::Bytes>>;
 pub use error::{Error, Result};

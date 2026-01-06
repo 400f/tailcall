@@ -16,12 +16,12 @@ pub enum Error {
     #[error("Trace Error: {}", _0)]
     Trace(TraceError),
 
-    #[error("Failed to instantiate OTLP provider")]
-    OltpProviderInstantiationFailed,
-
     #[error("Var Error: {}", _0)]
     Var(VarError),
 
     #[error("Invalid header value: {}", _0)]
     InvalidHeaderValue(InvalidHeaderValue),
+
+    #[error("Tonic Transport Error: {}", _0)]
+    TonicTransport(tonic::transport::Error),
 }
