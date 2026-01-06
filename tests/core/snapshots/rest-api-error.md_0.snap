@@ -1,7 +1,6 @@
 ---
 source: tests/core/spec.rs
 expression: response
-snapshot_kind: text
 ---
 {
   "status": 500,
@@ -9,7 +8,9 @@ snapshot_kind: text
     "content-type": "application/json"
   },
   "body": {
-    "data": null,
+    "data": {
+      "user": null
+    },
     "errors": [
       {
         "message": "internal: non-null types require a return value",
@@ -22,6 +23,19 @@ snapshot_kind: text
         "path": [
           "user",
           "id"
+        ]
+      },
+      {
+        "message": "internal: non-null types require a return value",
+        "locations": [
+          {
+            "line": 4,
+            "column": 5
+          }
+        ],
+        "path": [
+          "user",
+          "name"
         ]
       }
     ]
