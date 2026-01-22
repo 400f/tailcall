@@ -170,6 +170,7 @@ opentelemetry-otlp = { version = "0.28", features = [
   "metrics",
   # required to make grpc requests
   "grpc-tonic",
+  "gzip-tonic",
   "tls-roots",
 ], optional = true }
 opentelemetry-prometheus = "0.28"

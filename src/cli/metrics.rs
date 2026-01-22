@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 
 use crate::core::runtime::TargetRuntime;
 
@@ -18,17 +18,21 @@ fn cache_metrics(runtime: &TargetRuntime) -> Result<()> {
     Ok(())
 }
 
-async fn process_resources_metrics() -> Result<()> {
+fn process_resources_metrics() {
     let meter = opentelemetry::global::meter("process-resources");
 
-    opentelemetry_system_metrics::init_process_observer(meter)
-        .await
-        .map_err(|err| anyhow!(err))
+    // init_process_observer runs an infinite loop to collect system metrics,
+    // so it must be spawned as a background task
+    tokio::spawn(async move {
+        if let Err(err) = opentelemetry_system_metrics::init_process_observer(meter).await {
+            tracing::warn!("process_resources_metrics failed: {}", err);
+        }
+    });
 }
 
 pub async fn init_metrics(runtime: &TargetRuntime) -> Result<()> {
     cache_metrics(runtime)?;
-    process_resources_metrics().await?;
+    process_resources_metrics();
 
     Ok(())
 }
